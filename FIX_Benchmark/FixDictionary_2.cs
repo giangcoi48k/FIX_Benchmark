@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 
 namespace FIX_Benchmark
@@ -69,7 +68,7 @@ namespace FIX_Benchmark
         private static bool TryParseDouble(string value, out double result) => double.TryParse(value, NumberStyles.Any, _culture, out result);
 
         // Tối ưu Parse bằng cách giảm việc tạo đối tượng mới không cần thiết
-        protected unsafe void Parse(ReadOnlySpan<char> inputSpan, out List<FixDictionaryBase> groups)
+        protected void Parse(ReadOnlySpan<char> inputSpan, out List<FixDictionaryBase> groups)
         {
             groups = new List<FixDictionaryBase>();
             FixDictionaryBase currentGroup = null;
@@ -77,36 +76,32 @@ namespace FIX_Benchmark
             const char splitter = '';
             const char equalChar = '=';
 
-            fixed (char* ptr = inputSpan) // Sử dụng con trỏ để truy cập trực tiếp bộ nhớ
+            int startIndex = 0;
+
+            while (inputSpan.Length > 0)
             {
-                int index = 0;
-                while (index < inputSpan.Length)
+                var splitterIndex = inputSpan.IndexOf(splitter);
+                if (splitterIndex == -1) break;
+
+                var leftPart = inputSpan.Slice(0, splitterIndex);
+                var equalIndex = leftPart.IndexOf(equalChar);
+                if (equalIndex == -1) continue;
+
+                var key = int.Parse(leftPart.Slice(0, equalIndex));
+
+                var value = leftPart.Slice(equalIndex + 1).ToString();
+
+                if (key == 83)
                 {
-                    var splitterIndex = Array.IndexOf(inputSpan.ToArray(), splitter, index);
-                    if (splitterIndex == -1) break;
-
-                    // Trích xuất key và value trực tiếp từ con trỏ
-                    var leftPart = new ReadOnlySpan<char>(ptr + index, splitterIndex - index);
-                    var equalIndex = leftPart.IndexOf(equalChar);
-
-                    if (equalIndex == -1) continue;
-
-                    var key = int.Parse(leftPart.Slice(0, equalIndex));
-
-                    var value = leftPart.Slice(equalIndex + 1).ToString();
-
-                    if (key == 83)
-                    {
-                        currentGroup = new FixDictionaryBase();
-                        groups.Add(currentGroup);
-                    }
-
-                    var isChecksum = key == 10;
-                    var currentDict = isChecksum ? _dict : currentGroup != null ? currentGroup._dict : _dict;
-                    currentDict[key] = value;
-
-                    index = splitterIndex + 1; // Di chuyển chỉ số tiếp theo
+                    currentGroup = new FixDictionaryBase();
+                    groups.Add(currentGroup);
                 }
+
+                var isChecksum = key == 10;
+                var currentDict = isChecksum ? _dict : currentGroup != null ? currentGroup._dict : _dict;
+                currentDict[key] = value;
+
+                inputSpan = inputSpan.Slice(splitterIndex + 1);
             }
         }
     }
