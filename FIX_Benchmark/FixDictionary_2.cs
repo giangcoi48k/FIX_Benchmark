@@ -3,12 +3,12 @@ using System.Globalization;
 
 namespace FIX_Benchmark
 {
-    public class FixDictionaryBase
+    public class FixDictionaryBase_2
     {
         private readonly Dictionary<int, string> _dict;
         private static readonly CultureInfo _culture = CultureInfo.CreateSpecificCulture("en-US");
 
-        protected FixDictionaryBase()
+        protected FixDictionaryBase_2()
         {
             _dict = new Dictionary<int, string>();
         }
@@ -68,10 +68,10 @@ namespace FIX_Benchmark
         private static bool TryParseDouble(string value, out double result) => double.TryParse(value, NumberStyles.Any, _culture, out result);
 
         // Tối ưu Parse bằng cách giảm việc tạo đối tượng mới không cần thiết
-        protected void Parse(ReadOnlySpan<char> inputSpan, out List<FixDictionaryBase> groups)
+        protected void Parse(ReadOnlySpan<char> inputSpan, out List<FixDictionaryBase_2> groups)
         {
-            groups = new List<FixDictionaryBase>();
-            FixDictionaryBase currentGroup = null;
+            groups = new List<FixDictionaryBase_2>();
+            FixDictionaryBase_2 currentGroup = null;
 
             const char splitter = '';
             const char equalChar = '=';
@@ -93,7 +93,7 @@ namespace FIX_Benchmark
 
                 if (key == 83)
                 {
-                    currentGroup = new FixDictionaryBase();
+                    currentGroup = new FixDictionaryBase_2();
                     groups.Add(currentGroup);
                 }
 
@@ -106,11 +106,11 @@ namespace FIX_Benchmark
         }
     }
 
-    public sealed class FixDictionary : FixDictionaryBase
+    public sealed class FixDictionary_2 : FixDictionaryBase
     {
         private readonly string _fixString;
 
-        public FixDictionary(string fixString) : base()
+        public FixDictionary_2(string fixString) : base()
         {
             _fixString = fixString;
             Parse(fixString.AsSpan(), out var groups);
