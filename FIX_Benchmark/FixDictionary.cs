@@ -56,43 +56,43 @@ namespace FIX_Benchmark
 
         protected void Parse(ReadOnlySpan<char> inputSpan, out List<FixDictionaryBase> groups)
         {
-            // Thuật toán xử lý chuỗi FIX message:
-            // 1. Duyệt qua chuỗi dữ liệu đầu vào, tách từng cặp key-value dựa trên ký tự splitter.
-            // 2. Nếu key là RptSeq (83), khởi tạo một nhóm mới và thêm vào danh sách groups.
-            // 3. Gán key-value vào dictionary phù hợp:
-            //    - Nếu key là 10 (Checksum), lưu vào _dict chính.
-            //    - Nếu đang trong một nhóm, lưu vào dictionary của nhóm hiện tại.
-            //    - Nếu không, lưu vào _dict chính.
-            // 4. Tiếp tục quá trình cho đến khi không còn ký tự splitter trong chuỗi đầu vào.
+            // Algorithm for processing FIX message string:
+            // 1. Iterate through the input string and extract key-value pairs based on the splitter character.
+            // 2. If the key is RptSeq (83), initialize a new group and add it to the groups list.
+            // 3. Assign key-value pairs to the appropriate dictionary:
+            //    - If the key is 10 (Checksum), store it in the main _dict.
+            //    - If currently inside a group, store it in the dictionary of the current group.
+            //    - Otherwise, store it in the main _dict.
+            // 4. Continue processing until no more splitter characters are found in the input string.
 
             groups = [];
 
             FixDictionaryBase currentGroup = null;
 
-            // Các ký tự đặc biệt được sử dụng để tách dữ liệu
+            // Special characters used to separate data
             const char splitter = '';
             const char equalChar = '=';
             const int rptSeq = 83;
 
-            // Tìm vị trí đầu tiên của ký tự phân tách (splitter)
+            // Find the first occurrence of the splitter character
             int splitterIndex = inputSpan.IndexOf(splitter);
             var hasGroup = false;
 
             while (splitterIndex != -1)
             {
-                // Cắt phần bên trái của splitter để lấy key-value
+                // Extract the part before the splitter to get the key-value pair
                 var leftPart = inputSpan[..splitterIndex];
 
-                // Tìm vị trí dấu '=' để tách key và value
+                // Find the position of '=' to separate key and value
                 var equalIndex = leftPart.IndexOf(equalChar);
 
-                // Lấy key từ phần trước dấu '='
+                // Extract key from the part before '='
                 var key = int.Parse(leftPart[..equalIndex]);
 
-                // Lấy value từ phần sau dấu '='
+                // Extract value from the part after '='
                 var value = leftPart[(equalIndex + 1)..].ToString();
 
-                // Nếu key là RptSeq (83), bắt đầu một nhóm mới và thêm vào danh sách groups
+                // If the key is RptSeq (83), start a new group and add it to the groups list
                 if (key == rptSeq)
                 {
                     hasGroup = true;
@@ -100,15 +100,15 @@ namespace FIX_Benchmark
                     groups.Add(currentGroup);
                 }
 
-                // Xác định dictionary thích hợp để lưu trữ dữ liệu
-                // - Nếu key là 10 (Checksum), luôn lưu vào _dict chính
-                // - Nếu đã xác định nhóm (hasGroup == true), lưu vào dictionary của nhóm hiện tại
-                // - Nếu không, lưu vào _dict chính
+                // Determine the appropriate dictionary to store data
+                // - If the key is 10 (Checksum), always store it in the main _dict
+                // - If a group has been identified (hasGroup == true), store it in the current group's dictionary
+                // - Otherwise, store it in the main _dict
                 var isChecksum = key == 10;
                 var currentDict = isChecksum ? _dict : hasGroup ? currentGroup._dict : _dict;
                 currentDict[key] = value;
 
-                // Loại bỏ phần đã xử lý và tiếp tục tìm kiếm splitter tiếp theo
+                // Remove the processed part and continue searching for the next splitter
                 inputSpan = inputSpan[(splitterIndex + 1)..];
                 splitterIndex = inputSpan.IndexOf(splitter);
             }
